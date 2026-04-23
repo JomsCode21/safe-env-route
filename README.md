@@ -14,7 +14,7 @@ It is useful when your app needs values like API keys, database URLs, secrets, o
 ## Installation
 
 ```powershell
-npm install env-checker
+npm install env-checking
 ```
 
 ## How to use it
