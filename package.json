@@ -1,0 +1,24 @@
+{
+  "name": "env-checking",
+  "version": "1.0.2",
+  "description": "A simple utility to check for required environment variables.",
+  "main": "src/index.js",
+  "types": "index.d.ts",
+  "files": [
+    "src",
+    "index.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "env-checking": "src/index.js"
+  },
+  "scripts": {
+    "test": "node test/index.js",
+    "prepublishOnly": "npm test"
+  },
+  "keywords": [],
+  "author": "Jhumari Job Galos",
+  "license": "MIT",
+  "type": "commonjs"
+}
