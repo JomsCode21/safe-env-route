@@ -8,6 +8,10 @@ function formatIssue(issue) {
     if (issue.reason === "unknown_group") {
         return `Group "${issue.group}" is not defined`;
     }
+    if (issue.reason === "unknown_key") {
+        const suggestion = issue.suggestion ? ` Did you mean "${issue.suggestion}"?` : "";
+        return `[${issue.group}] ${issue.key} is not defined in schema.${suggestion}`;
+    }
     const expected = issue.expected ? `expected ${issue.expected}` : "invalid value";
     const received = issue.received !== undefined ? `, received "${issue.received}"` : "";
     const detail = issue.detail ? ` (${issue.detail})` : "";

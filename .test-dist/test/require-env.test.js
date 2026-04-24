@@ -40,3 +40,71 @@ const src_1 = require("../src");
         ANALYTICS_TIMEOUT: 30,
     });
 });
+(0, node_test_1.default)("strictUnknownKeys is opt-in and ignores unknown keys by default", () => {
+    (0, src_1.defineEnv)({
+        shared: {
+            API_URL: (0, src_1.str)(),
+        },
+    });
+    const result = (0, src_1.requireEnv)(["shared"], {
+        env: {
+            API_URL: "https://example.com",
+            EXTRA_KEY: "value",
+        },
+    });
+    strict_1.default.deepEqual(result, {
+        API_URL: "https://example.com",
+    });
+});
+(0, node_test_1.default)("strictUnknownKeys throws for unknown keys", () => {
+    (0, src_1.defineEnv)({
+        shared: {
+            API_URL: (0, src_1.str)(),
+        },
+    });
+    strict_1.default.throws(() => (0, src_1.requireEnv)(["shared"], {
+        strictUnknownKeys: true,
+        env: {
+            API_URL: "https://example.com",
+            EXTRA_KEY: "value",
+        },
+    }), (error) => {
+        strict_1.default.ok(error instanceof src_1.EnvValidationError);
+        strict_1.default.match(error.message, /\[shared\] EXTRA_KEY is not defined in schema/);
+        return true;
+    });
+});
+(0, node_test_1.default)("strictUnknownKeys includes typo suggestions", () => {
+    (0, src_1.defineEnv)({
+        shared: {
+            API_URL: (0, src_1.str)(),
+        },
+    });
+    strict_1.default.throws(() => (0, src_1.requireEnv)(["shared"], {
+        strictUnknownKeys: true,
+        env: {
+            API_URl: "https://example.com",
+        },
+    }), (error) => {
+        strict_1.default.ok(error instanceof src_1.EnvValidationError);
+        strict_1.default.match(error.message, /Did you mean "API_URL"\?/);
+        return true;
+    });
+});
+(0, node_test_1.default)("optionalEnv also supports strictUnknownKeys", () => {
+    (0, src_1.defineEnv)({
+        analytics: {
+            ANALYTICS_TIMEOUT: (0, src_1.int)(),
+        },
+    });
+    strict_1.default.throws(() => (0, src_1.optionalEnv)(["analytics"], {
+        strictUnknownKeys: true,
+        env: {
+            ANALYTICS_TIMOUT: "30",
+        },
+    }), (error) => {
+        strict_1.default.ok(error instanceof src_1.EnvValidationError);
+        strict_1.default.match(error.message, /ANALYTICS_TIMOUT is not defined in schema/);
+        return true;
+    });
+});

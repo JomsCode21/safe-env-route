@@ -103,6 +103,26 @@ const env = requireEnv(["shared"], {
 });
 ```
 
+### `options.strictUnknownKeys`
+
+Set `strictUnknownKeys: true` to fail on keys that are not defined in the selected groups.
+
+```ts
+const env = requireEnv(["shared"], {
+  strictUnknownKeys: true,
+  env: {
+    APP_URL: "https://example.com",
+    NODE_ENV: "development",
+    APP_URl: "https://typo.example.com", // typo -> unknown key
+  },
+});
+```
+
+Notes:
+
+- Default is `false` (backward compatible).
+- Best used with a filtered `options.env` object or full schema coverage when strictness is enabled.
+
 ## Validators
 
 - `str()` -> string
@@ -119,6 +139,7 @@ When validation fails, errors include the group and key:
 Environment validation failed:
 - [shared] APP_URL expected a valid URL, received "not-a-url"
 - [auth] GOOGLE_CLIENT_SECRET is required but missing
+- [shared] APP_URl is not defined in schema. Did you mean "APP_URL"?
 ```
 
 ## Legacy Compatibility
@@ -223,3 +244,15 @@ export const paymentsEnv = optionalEnv(["payments"]);
 npm run build
 npm test
 ```
+
+## Quick Demo: Strict Unknown Keys
+
+```bash
+npm run build
+node examples/strict-unknown-keys.cjs
+```
+
+This prints:
+
+- strict mode off: extra key is ignored
+- strict mode on: extra key throws an error with suggestion

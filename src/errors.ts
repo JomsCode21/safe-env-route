@@ -1,4 +1,4 @@
-export type EnvIssueReason = "missing" | "invalid" | "unknown_group";
+export type EnvIssueReason = "missing" | "invalid" | "unknown_group" | "unknown_key";
 
 export interface EnvIssue {
   group: string;
@@ -7,6 +7,7 @@ export interface EnvIssue {
   expected?: string;
   received?: string | null;
   detail?: string;
+  suggestion?: string;
 }
 
 function formatIssue(issue: EnvIssue): string {
@@ -16,6 +17,11 @@ function formatIssue(issue: EnvIssue): string {
 
   if (issue.reason === "unknown_group") {
     return `Group "${issue.group}" is not defined`;
+  }
+
+  if (issue.reason === "unknown_key") {
+    const suggestion = issue.suggestion ? ` Did you mean "${issue.suggestion}"?` : "";
+    return `[${issue.group}] ${issue.key} is not defined in schema.${suggestion}`;
   }
 
   const expected = issue.expected ? `expected ${issue.expected}` : "invalid value";
