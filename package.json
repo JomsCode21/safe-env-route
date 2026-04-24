@@ -1,24 +1,63 @@
 {
-  "name": "env-checking",
-  "version": "1.0.2",
-  "description": "A simple utility to check for required environment variables.",
-  "main": "src/index.js",
-  "types": "index.d.ts",
+  "name": "safe-env-route",
+  "version": "1.0.0",
+  "description": "Route- and feature-aware environment validation for TypeScript apps.",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./legacy": {
+      "types": "./dist/legacy.d.ts",
+      "default": "./dist/legacy.js"
+    },
+    "./cli": {
+      "types": "./dist/cli.d.ts",
+      "default": "./dist/cli.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
-    "src",
-    "index.d.ts",
+    "dist",
     "README.md",
     "LICENSE"
   ],
   "bin": {
-    "env-checking": "src/index.js"
+    "safe-env-route": "./dist/cli.js",
+    "env-checking": "./dist/cli.js"
   },
   "scripts": {
-    "test": "node test/index.js",
-    "prepublishOnly": "npm test"
+    "clean": "powershell -Command \"if (Test-Path dist) { Remove-Item -Recurse -Force dist }\"",
+    "clean:test": "powershell -Command \"if (Test-Path .test-dist) { Remove-Item -Recurse -Force .test-dist }\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "build:test": "npm run clean:test && tsc -p tsconfig.test.json",
+    "test": "npm run build:test && node .test-dist/test/legacy.test.js && node .test-dist/test/define-env.test.js && node .test-dist/test/require-env.test.js",
+    "check": "npm run build && npm test",
+    "prepublishOnly": "npm run check"
   },
-  "keywords": [],
-  "author": "Jhumari Job Galos",
+  "keywords": [
+    "env",
+    "environment",
+    "validation",
+    "typescript",
+    "route",
+    "feature-flags"
+  ],
+  "author": "JomsCode21",
   "license": "MIT",
-  "type": "commonjs"
+  "devDependencies": {
+    "@types/node": "^22.15.20",
+    "typescript": "^5.8.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JomsCode21/safe-env-route.git"
+  },
+  "bugs": {
+    "url": "https://github.com/JomsCode21/safe-env-route/issues"
+  },
+  "homepage": "https://github.com/JomsCode21/safe-env-route#readme"
 }
