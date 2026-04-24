@@ -22,23 +22,27 @@ npm install safe-env-route
 ```ts
 import { defineEnv, requireEnv, str, url, enumOf, int, bool } from "safe-env-route";
 
+// Define your env contract once.
 defineEnv({
+  // Shared vars used across many features.
   shared: {
     APP_URL: url(),
     NODE_ENV: enumOf(["development", "test", "production"] as const),
     PORT: int(),
     DEBUG: bool(),
   },
+  // Auth-only vars.
   auth: {
     GOOGLE_CLIENT_ID: str(),
     GOOGLE_CLIENT_SECRET: str(),
   },
+  // Payments-only vars.
   payments: {
     STRIPE_SECRET_KEY: str(),
   },
 });
 
-// In an auth route/module:
+// In an auth route/module, validate only required groups.
 const env = requireEnv(["shared", "auth"]);
 
 // env.PORT is number
@@ -141,6 +145,77 @@ safe-env-route API_KEY DATABASE_URL
 2. Add grouped schema with `defineEnv()`
 3. Replace flat checks route-by-route with `requireEnv([...])`
 4. Remove legacy usage when migration is done
+
+## Real App Integration (Express Example)
+
+This repo includes ready-to-copy app templates:
+
+- `examples/express-app/src/env/schema.ts`
+- `examples/express-app/src/env/server.ts`
+- `examples/express-app/src/env/auth.ts`
+- `examples/express-app/src/env/payments.ts`
+
+### 1) Define groups once
+
+```ts
+// src/env/schema.ts
+import { bool, defineEnv, enumOf, int, str, url } from "safe-env-route";
+
+// Define env vars once and group them by feature.
+defineEnv({
+  // Shared values needed by many modules.
+  shared: {
+    NODE_ENV: enumOf(["development", "test", "production"] as const),
+    APP_URL: url(),
+    PORT: int(),
+    DEBUG: bool(),
+  },
+  // Database connection config.
+  db: {
+    DATABASE_URL: url(),
+  },
+  // Auth provider credentials.
+  auth: {
+    GOOGLE_CLIENT_ID: str(),
+    GOOGLE_CLIENT_SECRET: str(),
+  },
+  // Optional payments integration.
+  payments: {
+    STRIPE_SECRET_KEY: str(),
+  },
+});
+```
+
+### 2) Validate required env before boot
+
+```ts
+// src/env/server.ts
+import { requireEnv } from "safe-env-route";
+import "./schema";
+
+// Validate critical env before app boot.
+export const serverEnv = requireEnv(["shared", "db"]);
+```
+
+### 3) Validate only what each feature needs
+
+```ts
+// src/env/auth.ts
+import { requireEnv } from "safe-env-route";
+import "./schema";
+
+// Auth routes require shared + auth groups.
+export const authEnv = requireEnv(["shared", "auth"]);
+```
+
+```ts
+// src/env/payments.ts
+import { optionalEnv } from "safe-env-route";
+import "./schema";
+
+// Payments can be absent in some deployments.
+export const paymentsEnv = optionalEnv(["payments"]);
+```
 
 ## Development
 
