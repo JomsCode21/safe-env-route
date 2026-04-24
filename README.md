@@ -1,134 +1,150 @@
-# env-checker
+# safe-env-route
 
-`env-checker` is a small Node.js utility for checking whether required environment variables are present.
+`safe-env-route` helps you validate environment variables by feature or route.
 
-It is useful when your app needs values like API keys, database URLs, secrets, or feature flags before starting a build, server, or deployment step.
+Instead of checking every env var for your whole app at once, you define groups (`shared`, `auth`, `payments`, etc.) and validate only what a route/module needs.
 
-## What it does
+## Why use this?
 
-- Checks a list of environment variable names.
-- Returns which variables are missing.
-- Throws an error if required variables are not set.
-- Can be used as a Node module or as a CLI command.
+- Fail fast with clear errors when env is missing or invalid
+- Keep feature-specific env checks close to feature code
+- Get parsed values (`int`, `bool`, `enum`) instead of raw strings
+- Keep old flat env-check behavior via `safe-env-route/legacy`
 
 ## Installation
 
-```powershell
-npm install env-checking
+```bash
+npm install safe-env-route
 ```
 
-## How to use it
+## Quick Start
 
-### 1. As a Node.js module
+```ts
+import { defineEnv, requireEnv, str, url, enumOf, int, bool } from "safe-env-route";
 
-Import it and check your required variables:
-
-```javascript
-const { checkEnv, assertEnv } = require("env-checker");
-
-const result = checkEnv(["API_KEY", "DATABASE_URL"]);
-
-if (!result.ok) {
-  console.error("Missing:", result.missing);
-  process.exit(1);
-}
-```
-
-### 2. As a strict guard
-
-Use `assertEnv` when you want the app to stop immediately if something is missing:
-
-```javascript
-const { assertEnv } = require("env-checker");
-
-assertEnv(["API_KEY", "DATABASE_URL"]);
-
-console.log("Environment is ready.");
-```
-
-### 3. As a CLI tool
-
-You can run it from the command line and pass the required variable names:
-
-```powershell
-node src\index.js API_KEY DATABASE_URL
-```
-
-If all variables are set, it prints:
-
-```text
-All required environment variables are set.
-```
-
-If something is missing, it prints the missing names and exits with code `1`.
-
-## How to apply it in your project
-
-The usual pattern is to call it right before your app starts, so your app fails fast instead of crashing later with confusing errors.
-
-```javascript
-const { assertEnv } = require("env-checker");
-
-assertEnv(["API_KEY", "DATABASE_URL"]);
-
-// Start the rest of your app here.
-```
-
-This is helpful for:
-
-- backend APIs
-- build scripts
-- deployment checks
-- local development setup
-
-## API
-
-### `checkEnv(requiredNames, options?)`
-
-Returns an object with:
-
-- `ok`: `true` if every variable is present
-- `missing`: array of missing variable names
-- `values`: object containing the current values for each requested variable
-
-Options:
-
-- `env`: custom environment object to check instead of `process.env`
-- `allowEmpty`: if `true`, empty strings are treated as valid values
-
-### `assertEnv(requiredNames, options?)`
-
-Same check as `checkEnv`, but throws an error when one or more variables are missing.
-
-Options:
-
-- `env`: custom environment object
-- `allowEmpty`: allow empty string values
-- `message`: custom error message
-
-### `runCli(argv)`
-
-Internal CLI helper used by the executable entry point.
-
-## Example
-
-```javascript
-const { checkEnv } = require("env-checker");
-
-const envStatus = checkEnv(["PORT", "NODE_ENV"], {
-  env: {
-    PORT: "3000",
-    NODE_ENV: "development",
+defineEnv({
+  shared: {
+    APP_URL: url(),
+    NODE_ENV: enumOf(["development", "test", "production"] as const),
+    PORT: int(),
+    DEBUG: bool(),
+  },
+  auth: {
+    GOOGLE_CLIENT_ID: str(),
+    GOOGLE_CLIENT_SECRET: str(),
+  },
+  payments: {
+    STRIPE_SECRET_KEY: str(),
   },
 });
 
-console.log(envStatus);
+// In an auth route/module:
+const env = requireEnv(["shared", "auth"]);
+
+// env.PORT is number
+// env.DEBUG is boolean
+// env.NODE_ENV is "development" | "test" | "production"
 ```
 
-## Testing
+## How It Works
 
-Run the included tests with:
+1. Call `defineEnv()` once with grouped schema.
+2. Call `requireEnv([...groups])` where needed.
+3. Package reads `process.env`, validates selected groups, and returns parsed values.
+4. If invalid/missing, it throws a readable `EnvValidationError`.
 
-```powershell
+## API
+
+### `defineEnv(schema)`
+
+Registers your grouped schema.
+
+```ts
+defineEnv({
+  shared: { APP_URL: url() },
+  auth: { GOOGLE_CLIENT_ID: str() },
+});
+```
+
+### `requireEnv(groups, options?)`
+
+Validates selected groups.
+
+- Throws on missing values
+- Throws on invalid values
+- Returns parsed values
+
+```ts
+const env = requireEnv(["shared", "auth"]);
+```
+
+### `optionalEnv(groups, options?)`
+
+Validates selected groups but allows missing values.
+
+- Missing values are skipped
+- Provided values must still be valid
+
+```ts
+const env = optionalEnv(["payments"]);
+```
+
+### `options.env`
+
+All validators accept `options.env` if you want to validate a custom env object (useful for tests).
+
+```ts
+const env = requireEnv(["shared"], {
+  env: { APP_URL: "https://example.com", NODE_ENV: "development", PORT: "3000", DEBUG: "true" },
+});
+```
+
+## Validators
+
+- `str()` -> string
+- `url()` -> URL string (must be valid URL)
+- `bool()` -> boolean (`true/false`, `1/0`, `yes/no`, `on/off`)
+- `int()` -> number (whole integer)
+- `enumOf([...])` -> one of allowed string values
+
+## Error Example
+
+When validation fails, errors include the group and key:
+
+```txt
+Environment validation failed:
+- [shared] APP_URL expected a valid URL, received "not-a-url"
+- [auth] GOOGLE_CLIENT_SECRET is required but missing
+```
+
+## Legacy Compatibility
+
+If you are migrating from the old flat checker:
+
+```ts
+import { checkEnv, assertEnv, runCli } from "safe-env-route/legacy";
+```
+
+This keeps old behavior while you migrate gradually to grouped schemas.
+
+## CLI
+
+Legacy-compatible CLI is included:
+
+```bash
+safe-env-route API_KEY DATABASE_URL
+```
+
+## Minimal Migration Path
+
+1. Keep existing code using `safe-env-route/legacy`
+2. Add grouped schema with `defineEnv()`
+3. Replace flat checks route-by-route with `requireEnv([...])`
+4. Remove legacy usage when migration is done
+
+## Development
+
+```bash
+npm run build
 npm test
 ```
