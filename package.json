@@ -1,74 +1,146 @@
 {
 
   "name": "feature-env",
-  "version": "1.2.2",
+
+  "version": "1.3.0",
+
   "description": "A TypeScript-first package for validating environment variables by feature, route, or module.",
+
   "type": "commonjs",
+
   "main": "./dist/index.js",
+
   "types": "./dist/index.d.ts",
+
   "exports": {
+
     ".": {
+
       "types": "./dist/index.d.ts",
+
       "default": "./dist/index.js"
+
     },
+
     "./legacy": {
+
       "types": "./dist/legacy.d.ts",
+
       "default": "./dist/legacy.js"
+
     },
+
     "./cli": {
+
       "types": "./dist/cli.d.ts",
+
       "default": "./dist/cli.js"
+
     },
+
     "./package.json": "./package.json"
+
   },
+
   "files": [
+
     "dist",
+
     "README.md",
+
     "LICENSE"
+
   ],
+
   "bin": {
+
     "feature-env": "./dist/cli.js",
+
     "safe-env-route": "./dist/cli.js",
+
     "env-checking": "./dist/cli.js"
+
   },
+
   "scripts": {
+
     "clean": "powershell -Command \"if (Test-Path dist) { Remove-Item -Recurse -Force dist }\"",
+
     "clean:test": "powershell -Command \"if (Test-Path .test-dist) { Remove-Item -Recurse -Force .test-dist }\"",
+
     "prebuild": "npm run clean",
+
     "build": "tsc -p tsconfig.build.json",
+
     "postbuild": "node -e \"const fs=require('node:fs');const required=['dist/index.js','dist/index.d.ts'];const missing=required.filter((p)=>!fs.existsSync(p));if(missing.length){console.error('Build output check failed. Missing:',missing.join(', '));process.exit(1);}console.log('Build output verified.');\"",
+
     "prebuild:test": "npm run clean:test",
+
     "build:test": "tsc -p tsconfig.test.json",
+
     "postbuild:test": "node -e \"const fs=require('node:fs');const required=['.test-dist/test/legacy.test.js','.test-dist/test/define-env.test.js','.test-dist/test/require-env.test.js','.test-dist/test/env-example.test.js'];const missing=required.filter((p)=>!fs.existsSync(p));if(missing.length){console.error('Test build output check failed. Missing:',missing.join(', '));process.exit(1);}console.log('Test build output verified.');\"",
+
     "test": "npm run build:test && node .test-dist/test/legacy.test.js && node .test-dist/test/define-env.test.js && node .test-dist/test/require-env.test.js && node .test-dist/test/env-example.test.js",
+
     "check": "npm run build && npm test",
+
     "prepublishOnly": "npm run check"
+
   },
+
   "keywords": [
+
     "env",
+
     "environment",
+
     "env-validation",
+
     "config",
+
     "typescript",
+
     "node",
+
     "webapp",
+
     "dotenv",
+
     "validation",
+
     "nextjs",
+
     "express"
+
   ],
+
   "author": "JomsCode21",
+
   "license": "MIT",
+
   "devDependencies": {
+
     "@types/node": "^22.15.20",
+
     "typescript": "^5.8.3"
+
   },
+
   "repository": {
+
     "type": "git",
+
     "url": "git+https://github.com/JomsCode21/feature-env.git"
+
   },
+
   "bugs": {
+
     "url": "https://github.com/JomsCode21/feature-env/issues"
+
   },
+
   "homepage": "https://github.com/JomsCode21/feature-env#readme"
+
 }
+
