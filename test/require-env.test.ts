@@ -134,3 +134,28 @@ test("optionalEnv also supports strictUnknownKeys", () => {
     },
   );
 });
+
+test("requireEnv throws when selected groups define duplicate keys", () => {
+  defineEnv({
+    shared: {
+      API_URL: str(),
+    },
+    auth: {
+      API_URL: str(),
+    },
+  });
+
+  assert.throws(
+    () =>
+      requireEnv(["shared", "auth"], {
+        env: {
+          API_URL: "https://example.com",
+        },
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof EnvValidationError);
+      assert.match(error.message, /API_URL is defined in multiple selected groups/);
+      return true;
+    },
+  );
+});

@@ -53,3 +53,30 @@ const src_1 = require("../src");
         APP_URL: "https://example.com",
     });
 });
+(0, node_test_1.default)("defineEnv rejects empty schema", () => {
+    strict_1.default.throws(() => (0, src_1.defineEnv)({}), (error) => {
+        strict_1.default.ok(error instanceof Error);
+        strict_1.default.match(error.message, /at least one group/i);
+        return true;
+    });
+});
+(0, node_test_1.default)("defineEnv rejects empty group schema", () => {
+    strict_1.default.throws(() => (0, src_1.defineEnv)({
+        shared: {},
+    }), (error) => {
+        strict_1.default.ok(error instanceof Error);
+        strict_1.default.match(error.message, /must define at least one environment variable/i);
+        return true;
+    });
+});
+(0, node_test_1.default)("defineEnv rejects non-validator values", () => {
+    strict_1.default.throws(() => (0, src_1.defineEnv)({
+        shared: {
+            PORT: 3000,
+        },
+    }), (error) => {
+        strict_1.default.ok(error instanceof Error);
+        strict_1.default.match(error.message, /Invalid validator/i);
+        return true;
+    });
+});

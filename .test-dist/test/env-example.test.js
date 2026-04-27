@@ -51,3 +51,20 @@ const src_1 = require("../src");
     strict_1.default.equal(content, "# [payments]\nSTRIPE_SECRET_KEY=\n");
     strict_1.default.equal(saved, content);
 });
+(0, node_test_1.default)("writeEnvExample can refuse overwrite", () => {
+    (0, src_1.defineEnv)({
+        shared: {
+            APP_URL: (0, src_1.str)(),
+        },
+    });
+    const tempDir = (0, node_fs_1.mkdtempSync)((0, node_path_1.join)((0, node_os_1.tmpdir)(), "feature-env-overwrite-"));
+    const outputPath = (0, node_path_1.join)(tempDir, ".env.example");
+    (0, node_fs_1.writeFileSync)(outputPath, "EXISTING=1\n", "utf8");
+    strict_1.default.throws(() => (0, src_1.writeEnvExample)(outputPath, {
+        overwrite: false,
+    }), (error) => {
+        strict_1.default.ok(error instanceof Error);
+        strict_1.default.match(error.message, /Refusing to overwrite existing file/i);
+        return true;
+    });
+});

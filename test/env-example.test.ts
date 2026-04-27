@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -59,4 +59,28 @@ test("writeEnvExample writes .env.example-compatible file", () => {
 
   assert.equal(content, "# [payments]\nSTRIPE_SECRET_KEY=\n");
   assert.equal(saved, content);
+});
+
+test("writeEnvExample can refuse overwrite", () => {
+  defineEnv({
+    shared: {
+      APP_URL: str(),
+    },
+  });
+
+  const tempDir = mkdtempSync(join(tmpdir(), "feature-env-overwrite-"));
+  const outputPath = join(tempDir, ".env.example");
+  writeFileSync(outputPath, "EXISTING=1\n", "utf8");
+
+  assert.throws(
+    () =>
+      writeEnvExample(outputPath, {
+        overwrite: false,
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof Error);
+      assert.match(error.message, /Refusing to overwrite existing file/i);
+      return true;
+    },
+  );
 });

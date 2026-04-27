@@ -113,3 +113,55 @@ test("legacy runCli auto-loads schema from dist/env/schema.js", () => {
 
   assert.equal(readFileSync(outputPath, "utf8"), "# [shared]\nAPP_URL=\n");
 });
+
+test("legacy runCli rejects unknown options", () => {
+  const originalError = console.error;
+  let captured = "";
+
+  try {
+    console.error = (message?: unknown) => {
+      captured = String(message ?? "");
+    };
+
+    const exitCode = runCli(["--unknown-option"]);
+    assert.equal(exitCode, 1);
+  } finally {
+    console.error = originalError;
+  }
+
+  assert.match(captured, /Unknown option: --unknown-option/);
+});
+
+test("legacy runCli supports --no-overwrite for generated example", () => {
+  const originalLog = console.log;
+  const originalError = console.error;
+  const tempDir = mkdtempSync(join(tmpdir(), "feature-env-cli-overwrite-"));
+  const outputPath = join(tempDir, ".env.example");
+  writeFileSync(outputPath, "EXISTING=1\n", "utf8");
+
+  let captured = "";
+
+  try {
+    console.log = () => {};
+    console.error = (message?: unknown) => {
+      captured = String(message ?? "");
+    };
+
+    const exitCode = runCli([
+      "--generate-example",
+      "--schema",
+      "test/fixtures/cli-schema.cjs",
+      "--out",
+      outputPath,
+      "--no-overwrite",
+    ]);
+
+    assert.equal(exitCode, 1);
+  } finally {
+    console.log = originalLog;
+    console.error = originalError;
+  }
+
+  assert.match(captured, /Refusing to overwrite existing file/i);
+  assert.equal(readFileSync(outputPath, "utf8"), "EXISTING=1\n");
+});

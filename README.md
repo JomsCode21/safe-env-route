@@ -126,6 +126,7 @@ import { writeEnvExample } from "feature-env";
 
 writeEnvExample(); // .env.example
 writeEnvExample("./config/.env.example");
+writeEnvExample(".env.example", { overwrite: false }); // throw if file exists
 ```
 
 Programmatic implementation example:
@@ -213,6 +214,12 @@ Custom output path:
 
 ```bash
 npx feature-env --generate-example --out ./config/.env.example
+```
+
+Prevent overwrite of an existing output file:
+
+```bash
+npx feature-env --generate-example --no-overwrite
 ```
 
 Explicit schema path:

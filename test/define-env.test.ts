@@ -55,3 +55,44 @@ test("requireEnv does not force unrelated groups", () => {
     APP_URL: "https://example.com",
   });
 });
+
+test("defineEnv rejects empty schema", () => {
+  assert.throws(
+    () => defineEnv({}),
+    (error: unknown) => {
+      assert.ok(error instanceof Error);
+      assert.match(error.message, /at least one group/i);
+      return true;
+    },
+  );
+});
+
+test("defineEnv rejects empty group schema", () => {
+  assert.throws(
+    () =>
+      defineEnv({
+        shared: {},
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof Error);
+      assert.match(error.message, /must define at least one environment variable/i);
+      return true;
+    },
+  );
+});
+
+test("defineEnv rejects non-validator values", () => {
+  assert.throws(
+    () =>
+      defineEnv({
+        shared: {
+          PORT: 3000 as unknown as ReturnType<typeof str>,
+        },
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof Error);
+      assert.match(error.message, /Invalid validator/i);
+      return true;
+    },
+  );
+});

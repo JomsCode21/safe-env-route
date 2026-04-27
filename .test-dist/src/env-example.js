@@ -7,6 +7,7 @@ const define_env_1 = require("./define-env");
 const defaultOptions = {
     includeComments: true,
     newlineBetweenGroups: true,
+    overwrite: true,
 };
 function getOptions(options) {
     return {
@@ -39,7 +40,11 @@ function generateEnvExample(options) {
     return `${content}\n`;
 }
 function writeEnvExample(filePath = ".env.example", options) {
-    const content = generateEnvExample(options);
+    const settings = getOptions(options);
+    if (!settings.overwrite && (0, node_fs_1.existsSync)(filePath)) {
+        throw new Error(`Refusing to overwrite existing file: ${filePath}`);
+    }
+    const content = generateEnvExample(settings);
     (0, node_fs_1.writeFileSync)(filePath, content, "utf8");
     return content;
 }

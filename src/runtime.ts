@@ -74,6 +74,7 @@ export function parseGroups(
   const issues: EnvIssue[] = [];
   const parsed: Record<string, unknown> = {};
   const allowedKeys = new Set<string>();
+  const keyOwners = new Map<string, string>();
   const requestedGroupNames: string[] = [];
 
   for (const groupName of groups) {
@@ -89,6 +90,17 @@ export function parseGroups(
     }
 
     for (const [name, validator] of Object.entries(groupSchema)) {
+      const previousOwner = keyOwners.get(name);
+      if (previousOwner && previousOwner !== groupName) {
+        issues.push({
+          group: `${previousOwner}, ${groupName}`,
+          key: name,
+          reason: "duplicate_key",
+          detail: `defined in both "${previousOwner}" and "${groupName}"`,
+        });
+        continue;
+      }
+      keyOwners.set(name, groupName);
       allowedKeys.add(name);
       const raw = env[name];
       if (!hasValue(raw)) {
