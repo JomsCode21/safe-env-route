@@ -1,13 +1,8 @@
 {
-<<<<<<< HEAD
+
   "name": "feature-env",
   "version": "1.2.2",
   "description": "A TypeScript-first package for validating environment variables by feature, route, or module.",
-=======
-  "name": "safe-env-route",
-  "version": "1.2.0",
-  "description": "Route- and feature-aware environment validation for TypeScript apps.",
->>>>>>> 4897bc3 (1.2.0)
   "type": "commonjs",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
