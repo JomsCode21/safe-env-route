@@ -1,6 +1,6 @@
 {
   "name": "feature-env",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "A TypeScript-first package for validating environment variables by feature, route, or module.",
   "type": "commonjs",
   "main": "./dist/index.js",
