@@ -1,0 +1,47 @@
+name: Pre-Publish Check
+
+on:
+  workflow_call:
+    inputs:
+      tag_name:
+        required: false
+        type: string
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  precheck:
+    name: Precheck (Node 22)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and test
+        run: npm run check
+
+      - name: Verify tag matches package version
+        if: inputs.tag_name != ''
+        shell: pwsh
+        run: |
+          $tag = "${{ inputs.tag_name }}" -replace '^v', ''
+          $packageVersion = (Get-Content package.json -Raw | ConvertFrom-Json).version
+
+          if ($tag -ne $packageVersion) {
+            Write-Error "Tag version ($tag) does not match package.json version ($packageVersion)."
+            exit 1
+          }
+
+          Write-Host "Tag version matches package.json: $packageVersion"
