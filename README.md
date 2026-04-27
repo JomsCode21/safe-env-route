@@ -65,6 +65,7 @@ const env = requireEnv(["shared", "auth"]);
 2. Call `requireEnv([...groups])` where needed.
 3. Package reads `process.env`, validates selected groups, and returns parsed values.
 4. If invalid/missing, it throws a readable `EnvValidationError`.
+5. Optionally generate `.env.example` from the same grouped schema.
 
 ## API
 
@@ -100,6 +101,53 @@ Validates selected groups but allows missing values.
 
 ```ts
 const env = optionalEnv(["payments"]);
+```
+
+### `generateEnvExample(options?)`
+
+Builds a deterministic `.env.example` string from the grouped schema registered via `defineEnv()`.
+
+```ts
+import { generateEnvExample } from "feature-env";
+
+const output = generateEnvExample();
+```
+
+Example output:
+
+```env
+# [shared]
+APP_URL=
+NODE_ENV=
+PORT=
+DEBUG=
+
+# [auth]
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# [payments]
+STRIPE_SECRET_KEY=
+```
+
+Optional formatting options:
+
+```ts
+const output = generateEnvExample({
+  includeComments: true,
+  newlineBetweenGroups: true,
+});
+```
+
+### `writeEnvExample(path?, options?)`
+
+Writes generated output to a file path. Default path is `.env.example`.
+
+```ts
+import { writeEnvExample } from "feature-env";
+
+writeEnvExample(); // writes .env.example
+writeEnvExample("./config/.env.example");
 ```
 
 ### `options.env`
@@ -163,10 +211,78 @@ This keeps old behavior while you migrate gradually to grouped schemas.
 
 ## CLI
 
-Legacy-compatible CLI is included:
+Legacy-compatible CLI is included.
+
+Validate flat required keys (legacy mode):
 
 ```bash
 feature-env API_KEY DATABASE_URL
+```
+
+Generate `.env.example` from grouped schema:
+
+```bash
+feature-env --generate-example
+```
+
+Use a custom output path:
+
+```bash
+feature-env --generate-example --out ./config/.env.example
+```
+
+Explicit schema path (if auto-detect does not match your layout):
+
+```bash
+feature-env --generate-example --schema ./dist/env/schema.js
+```
+
+Notes:
+
+- Auto-detect checks these files in order: `dist/env/schema.js`, `dist/schema.js`, `env/schema.js`, `schema.js`.
+- `--schema` should point to a JavaScript module that runs `defineEnv(...)` when imported.
+- `--out` defaults to `.env.example`.
+
+### Auto-generate on install (consumer app)
+
+How generation works:
+
+1. `npm install feature-env` only installs the package. It does not create `.env.example` by itself.
+2. `.env.example` is generated when the CLI command `feature-env --generate-example` is executed.
+3. To run that automatically after install, add a `postinstall` script in the consumer app.
+
+In the app using `feature-env`, you can auto-generate `.env.example` after install:
+
+```json
+{
+  "scripts": {
+    "env:example": "feature-env --generate-example",
+    "postinstall": "npm run env:example"
+  }
+}
+```
+
+Typical setup when schema is built to `dist`:
+
+```json
+{
+  "scripts": {
+    "build": "tsc",
+    "env:example": "feature-env --generate-example --schema ./dist/env/schema.js",
+    "postinstall": "npm run build && npm run env:example"
+  }
+}
+```
+
+If your schema file is not in one of the auto-detect paths, use:
+
+```json
+{
+  "scripts": {
+    "env:example": "feature-env --generate-example --schema ./dist/env/schema.js",
+    "postinstall": "npm run env:example"
+  }
+}
 ```
 
 ## Minimal Migration Path

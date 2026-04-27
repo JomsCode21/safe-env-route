@@ -1,3 +1,8 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { writeEnvExample } from "./env-example";
+
 export interface CheckEnvOptions {
   allowEmpty?: boolean;
   env?: Record<string, string | undefined | null>;
@@ -13,6 +18,20 @@ export interface CheckEnvResult {
 export interface LegacyEnvError extends Error {
   missing?: string[];
 }
+
+interface CliOptions {
+  generateExample: boolean;
+  schemaPath?: string;
+  outputPath: string;
+  requiredNames: string[];
+}
+
+const defaultSchemaCandidates = [
+  "dist/env/schema.js",
+  "dist/schema.js",
+  "env/schema.js",
+  "schema.js",
+];
 
 function normalizeNameList(names: unknown): string[] {
   if (!Array.isArray(names)) {
@@ -72,15 +91,110 @@ export function assertEnv(requiredNames: string[], options: CheckEnvOptions = {}
   throw error;
 }
 
-export function runCli(argv: string[]): number {
-  const requiredNames = argv.length > 0 ? argv : [];
-  const result = checkEnv(requiredNames);
+function parseCliOptions(argv: string[]): CliOptions {
+  let generateExample = false;
+  let schemaPath: string | undefined;
+  let outputPath = ".env.example";
+  const requiredNames: string[] = [];
 
-  if (result.ok) {
-    console.log("All required environment variables are set.");
-    return 0;
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+
+    if (arg === "--generate-example") {
+      generateExample = true;
+      continue;
+    }
+
+    if (arg === "--schema") {
+      const nextArg = argv[index + 1];
+      if (!nextArg || nextArg.startsWith("-")) {
+        throw new Error("Missing value for --schema");
+      }
+      schemaPath = nextArg;
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--out") {
+      const nextArg = argv[index + 1];
+      if (!nextArg || nextArg.startsWith("-")) {
+        throw new Error("Missing value for --out");
+      }
+      outputPath = nextArg;
+      index += 1;
+      continue;
+    }
+
+    requiredNames.push(arg);
   }
 
-  console.error(`Missing environment variables: ${result.missing.join(", ")}`);
-  return 1;
+  return {
+    generateExample,
+    schemaPath,
+    outputPath,
+    requiredNames,
+  };
+}
+
+function loadSchemaModule(schemaPath?: string): string | undefined {
+  if (schemaPath) {
+    const resolvedSchemaPath = resolve(process.cwd(), schemaPath);
+    require(resolvedSchemaPath);
+    return resolvedSchemaPath;
+  }
+
+  for (const candidate of defaultSchemaCandidates) {
+    const resolvedCandidate = resolve(process.cwd(), candidate);
+    if (!existsSync(resolvedCandidate)) {
+      continue;
+    }
+
+    require(resolvedCandidate);
+    return resolvedCandidate;
+  }
+
+  return undefined;
+}
+
+export function runCli(argv: string[]): number {
+  try {
+    const options = parseCliOptions(argv);
+
+    if (options.generateExample) {
+      const loadedSchemaPath = loadSchemaModule(options.schemaPath);
+      try {
+        writeEnvExample(options.outputPath);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (
+          !options.schemaPath &&
+          message.includes("No environment schema defined. Call defineEnv({...})")
+        ) {
+          throw new Error(
+            `No schema was loaded. Either pass --schema <path> or place schema at one of: ${defaultSchemaCandidates.join(", ")}`,
+          );
+        }
+        throw error;
+      }
+      console.log(`Generated ${options.outputPath}`);
+      if (loadedSchemaPath) {
+        console.log(`Using schema ${loadedSchemaPath}`);
+      }
+      return 0;
+    }
+
+    const result = checkEnv(options.requiredNames);
+
+    if (result.ok) {
+      console.log("All required environment variables are set.");
+      return 0;
+    }
+
+    console.error(`Missing environment variables: ${result.missing.join(", ")}`);
+    return 1;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(message);
+    return 1;
+  }
 }

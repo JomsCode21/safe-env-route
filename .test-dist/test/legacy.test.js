@@ -5,6 +5,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_test_1 = __importDefault(require("node:test"));
 const strict_1 = __importDefault(require("node:assert/strict"));
+const node_fs_1 = require("node:fs");
+const node_path_1 = require("node:path");
+const node_os_1 = require("node:os");
 const legacy_1 = require("../src/legacy");
 (0, node_test_1.default)("legacy checkEnv returns missing keys and values", () => {
     const result = (0, legacy_1.checkEnv)(["API_KEY", "DATABASE_URL"], {
@@ -42,4 +45,52 @@ const legacy_1 = require("../src/legacy");
     }
     strict_1.default.equal(ok, 0);
     strict_1.default.equal(failed, 1);
+});
+(0, node_test_1.default)("legacy runCli can generate .env.example from defined grouped schema", () => {
+    const originalLog = console.log;
+    const originalError = console.error;
+    const tempDir = (0, node_fs_1.mkdtempSync)((0, node_path_1.join)((0, node_os_1.tmpdir)(), "feature-env-cli-"));
+    const outputPath = (0, node_path_1.join)(tempDir, ".env.example");
+    try {
+        console.log = () => { };
+        console.error = () => { };
+        const exitCode = (0, legacy_1.runCli)([
+            "--generate-example",
+            "--schema",
+            "test/fixtures/cli-schema.cjs",
+            "--out",
+            outputPath,
+        ]);
+        strict_1.default.equal(exitCode, 0);
+    }
+    finally {
+        console.log = originalLog;
+        console.error = originalError;
+    }
+    strict_1.default.equal((0, node_fs_1.readFileSync)(outputPath, "utf8"), "# [shared]\nAPP_URL=\nPORT=\n\n# [auth]\nGOOGLE_CLIENT_ID=\n");
+});
+(0, node_test_1.default)("legacy runCli auto-loads schema from dist/env/schema.js", () => {
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalCwd = process.cwd();
+    const tempDir = (0, node_fs_1.mkdtempSync)((0, node_path_1.join)((0, node_os_1.tmpdir)(), "feature-env-auto-schema-"));
+    const distEnvDir = (0, node_path_1.join)(tempDir, "dist", "env");
+    const outputPath = (0, node_path_1.join)(tempDir, ".env.example");
+    const distIndexPath = (0, node_path_1.join)(originalCwd, ".test-dist", "src", "index.js").replace(/\\/g, "\\\\");
+    const schemaPath = (0, node_path_1.join)(distEnvDir, "schema.js");
+    (0, node_fs_1.mkdirSync)(distEnvDir, { recursive: true });
+    (0, node_fs_1.writeFileSync)(schemaPath, `const { defineEnv, str } = require("${distIndexPath}");\ndefineEnv({ shared: { APP_URL: str() } });\n`, "utf8");
+    try {
+        process.chdir(tempDir);
+        console.log = () => { };
+        console.error = () => { };
+        const exitCode = (0, legacy_1.runCli)(["--generate-example", "--out", outputPath]);
+        strict_1.default.equal(exitCode, 0);
+    }
+    finally {
+        process.chdir(originalCwd);
+        console.log = originalLog;
+        console.error = originalError;
+    }
+    strict_1.default.equal((0, node_fs_1.readFileSync)(outputPath, "utf8"), "# [shared]\nAPP_URL=\n");
 });

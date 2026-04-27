@@ -3,6 +3,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.checkEnv = checkEnv;
 exports.assertEnv = assertEnv;
 exports.runCli = runCli;
+const node_fs_1 = require("node:fs");
+const node_path_1 = require("node:path");
+const env_example_1 = require("./env-example");
+const defaultSchemaCandidates = [
+    "dist/env/schema.js",
+    "dist/schema.js",
+    "env/schema.js",
+    "schema.js",
+];
 function normalizeNameList(names) {
     if (!Array.isArray(names)) {
         return [];
@@ -48,13 +57,93 @@ function assertEnv(requiredNames, options = {}) {
     error.missing = result.missing;
     throw error;
 }
-function runCli(argv) {
-    const requiredNames = argv.length > 0 ? argv : [];
-    const result = checkEnv(requiredNames);
-    if (result.ok) {
-        console.log("All required environment variables are set.");
-        return 0;
+function parseCliOptions(argv) {
+    let generateExample = false;
+    let schemaPath;
+    let outputPath = ".env.example";
+    const requiredNames = [];
+    for (let index = 0; index < argv.length; index += 1) {
+        const arg = argv[index];
+        if (arg === "--generate-example") {
+            generateExample = true;
+            continue;
+        }
+        if (arg === "--schema") {
+            const nextArg = argv[index + 1];
+            if (!nextArg || nextArg.startsWith("-")) {
+                throw new Error("Missing value for --schema");
+            }
+            schemaPath = nextArg;
+            index += 1;
+            continue;
+        }
+        if (arg === "--out") {
+            const nextArg = argv[index + 1];
+            if (!nextArg || nextArg.startsWith("-")) {
+                throw new Error("Missing value for --out");
+            }
+            outputPath = nextArg;
+            index += 1;
+            continue;
+        }
+        requiredNames.push(arg);
     }
-    console.error(`Missing environment variables: ${result.missing.join(", ")}`);
-    return 1;
+    return {
+        generateExample,
+        schemaPath,
+        outputPath,
+        requiredNames,
+    };
+}
+function loadSchemaModule(schemaPath) {
+    if (schemaPath) {
+        const resolvedSchemaPath = (0, node_path_1.resolve)(process.cwd(), schemaPath);
+        require(resolvedSchemaPath);
+        return resolvedSchemaPath;
+    }
+    for (const candidate of defaultSchemaCandidates) {
+        const resolvedCandidate = (0, node_path_1.resolve)(process.cwd(), candidate);
+        if (!(0, node_fs_1.existsSync)(resolvedCandidate)) {
+            continue;
+        }
+        require(resolvedCandidate);
+        return resolvedCandidate;
+    }
+    return undefined;
+}
+function runCli(argv) {
+    try {
+        const options = parseCliOptions(argv);
+        if (options.generateExample) {
+            const loadedSchemaPath = loadSchemaModule(options.schemaPath);
+            try {
+                (0, env_example_1.writeEnvExample)(options.outputPath);
+            }
+            catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                if (!options.schemaPath &&
+                    message.includes("No environment schema defined. Call defineEnv({...})")) {
+                    throw new Error(`No schema was loaded. Either pass --schema <path> or place schema at one of: ${defaultSchemaCandidates.join(", ")}`);
+                }
+                throw error;
+            }
+            console.log(`Generated ${options.outputPath}`);
+            if (loadedSchemaPath) {
+                console.log(`Using schema ${loadedSchemaPath}`);
+            }
+            return 0;
+        }
+        const result = checkEnv(options.requiredNames);
+        if (result.ok) {
+            console.log("All required environment variables are set.");
+            return 0;
+        }
+        console.error(`Missing environment variables: ${result.missing.join(", ")}`);
+        return 1;
+    }
+    catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(message);
+        return 1;
+    }
 }

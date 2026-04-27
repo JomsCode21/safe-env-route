@@ -1,8 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EnvValidationError = exports.enumOf = exports.int = exports.bool = exports.url = exports.str = exports.optionalEnv = exports.requireEnv = exports.defineEnv = void 0;
+exports.EnvValidationError = exports.enumOf = exports.int = exports.bool = exports.url = exports.str = exports.optionalEnv = exports.requireEnv = exports.writeEnvExample = exports.generateEnvExample = exports.defineEnv = void 0;
 var define_env_1 = require("./define-env");
 Object.defineProperty(exports, "defineEnv", { enumerable: true, get: function () { return define_env_1.defineEnv; } });
+var env_example_1 = require("./env-example");
+Object.defineProperty(exports, "generateEnvExample", { enumerable: true, get: function () { return env_example_1.generateEnvExample; } });
+Object.defineProperty(exports, "writeEnvExample", { enumerable: true, get: function () { return env_example_1.writeEnvExample; } });
 var require_env_1 = require("./require-env");
 Object.defineProperty(exports, "requireEnv", { enumerable: true, get: function () { return require_env_1.requireEnv; } });
 var optional_env_1 = require("./optional-env");

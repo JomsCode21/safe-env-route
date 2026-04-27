@@ -39,8 +39,8 @@
     "postbuild": "node -e \"const fs=require('node:fs');const required=['dist/index.js','dist/index.d.ts'];const missing=required.filter((p)=>!fs.existsSync(p));if(missing.length){console.error('Build output check failed. Missing:',missing.join(', '));process.exit(1);}console.log('Build output verified.');\"",
     "prebuild:test": "npm run clean:test",
     "build:test": "tsc -p tsconfig.test.json",
-    "postbuild:test": "node -e \"const fs=require('node:fs');const required=['.test-dist/test/legacy.test.js','.test-dist/test/define-env.test.js','.test-dist/test/require-env.test.js'];const missing=required.filter((p)=>!fs.existsSync(p));if(missing.length){console.error('Test build output check failed. Missing:',missing.join(', '));process.exit(1);}console.log('Test build output verified.');\"",
-    "test": "npm run build:test && node .test-dist/test/legacy.test.js && node .test-dist/test/define-env.test.js && node .test-dist/test/require-env.test.js",
+    "postbuild:test": "node -e \"const fs=require('node:fs');const required=['.test-dist/test/legacy.test.js','.test-dist/test/define-env.test.js','.test-dist/test/require-env.test.js','.test-dist/test/env-example.test.js'];const missing=required.filter((p)=>!fs.existsSync(p));if(missing.length){console.error('Test build output check failed. Missing:',missing.join(', '));process.exit(1);}console.log('Test build output verified.');\"",
+    "test": "npm run build:test && node .test-dist/test/legacy.test.js && node .test-dist/test/define-env.test.js && node .test-dist/test/require-env.test.js && node .test-dist/test/env-example.test.js",
     "check": "npm run build && npm test",
     "prepublishOnly": "npm run check"
   },

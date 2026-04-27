@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 import { assertEnv, checkEnv, runCli } from "../src/legacy";
 
@@ -46,4 +49,67 @@ test("legacy runCli returns success and failure exit codes", () => {
 
   assert.equal(ok, 0);
   assert.equal(failed, 1);
+});
+
+test("legacy runCli can generate .env.example from defined grouped schema", () => {
+  const originalLog = console.log;
+  const originalError = console.error;
+  const tempDir = mkdtempSync(join(tmpdir(), "feature-env-cli-"));
+  const outputPath = join(tempDir, ".env.example");
+
+  try {
+    console.log = () => {};
+    console.error = () => {};
+
+    const exitCode = runCli([
+      "--generate-example",
+      "--schema",
+      "test/fixtures/cli-schema.cjs",
+      "--out",
+      outputPath,
+    ]);
+
+    assert.equal(exitCode, 0);
+  } finally {
+    console.log = originalLog;
+    console.error = originalError;
+  }
+
+  assert.equal(
+    readFileSync(outputPath, "utf8"),
+    "# [shared]\nAPP_URL=\nPORT=\n\n# [auth]\nGOOGLE_CLIENT_ID=\n",
+  );
+});
+
+test("legacy runCli auto-loads schema from dist/env/schema.js", () => {
+  const originalLog = console.log;
+  const originalError = console.error;
+  const originalCwd = process.cwd();
+  const tempDir = mkdtempSync(join(tmpdir(), "feature-env-auto-schema-"));
+  const distEnvDir = join(tempDir, "dist", "env");
+  const outputPath = join(tempDir, ".env.example");
+  const distIndexPath = join(originalCwd, ".test-dist", "src", "index.js").replace(/\\/g, "\\\\");
+  const schemaPath = join(distEnvDir, "schema.js");
+
+  mkdirSync(distEnvDir, { recursive: true });
+  writeFileSync(
+    schemaPath,
+    `const { defineEnv, str } = require("${distIndexPath}");\ndefineEnv({ shared: { APP_URL: str() } });\n`,
+    "utf8",
+  );
+
+  try {
+    process.chdir(tempDir);
+    console.log = () => {};
+    console.error = () => {};
+
+    const exitCode = runCli(["--generate-example", "--out", outputPath]);
+    assert.equal(exitCode, 0);
+  } finally {
+    process.chdir(originalCwd);
+    console.log = originalLog;
+    console.error = originalError;
+  }
+
+  assert.equal(readFileSync(outputPath, "utf8"), "# [shared]\nAPP_URL=\n");
 });
