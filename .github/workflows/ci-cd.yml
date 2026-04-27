@@ -40,7 +40,9 @@ jobs:
   publish:
     name: Publish to npm
     runs-on: windows-latest
-    needs: ci
+    needs:
+      - ci
+      - pre_publish_check
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: read
