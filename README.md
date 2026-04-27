@@ -12,28 +12,71 @@ Feature-scoped environment validation for web apps.
 npm install feature-env
 ```
 
-## Quick Start
+## Basic Implementation
+
+`src/env/schema.ts`
 
 ```ts
-import { bool, defineEnv, enumOf, int, requireEnv, str, url } from "feature-env";
+import { defineEnv, enumOf, int, str, url } from "feature-env";
 
-defineEnv({
+export const envSchema = defineEnv({
   shared: {
-    APP_URL: url(),
     NODE_ENV: enumOf(["development", "test", "production"] as const),
+    APP_URL: url(),
     PORT: int(),
-    DEBUG: bool(),
   },
-  auth: {
-    GOOGLE_CLIENT_ID: str(),
-    GOOGLE_CLIENT_SECRET: str(),
-  },
-  payments: {
-    STRIPE_SECRET_KEY: str(),
+  db: {
+    MONGODB_URI: str(),
   },
 });
+```
 
-const env = requireEnv(["shared", "auth"]);
+`src/env/server.ts`
+
+```ts
+import { requireEnv } from "feature-env";
+import { envSchema } from "./schema";
+
+export const serverEnv = requireEnv(envSchema, ["shared"] as const);
+```
+
+`src/env/db.ts`
+
+```ts
+import { requireEnv } from "feature-env";
+import { envSchema } from "./schema";
+
+export const dbEnv = requireEnv(envSchema, ["db"] as const);
+```
+
+### File Call Flow
+
+`src/app.ts` (or `src/index.ts`)
+
+```ts
+import { serverEnv } from "./env/server";
+import { connectDB } from "./db/connect";
+
+async function bootstrap() {
+  console.log(`Starting on port ${serverEnv.PORT}`);
+  await connectDB();
+}
+
+bootstrap().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
+```
+
+`src/db/connect.ts`
+
+```ts
+import mongoose from "mongoose";
+import { dbEnv } from "../env/db";
+
+export async function connectDB() {
+  await mongoose.connect(dbEnv.MONGODB_URI);
+}
 ```
 
 ## Core API
@@ -52,23 +95,48 @@ Validates selected groups but allows missing values.
 
 ### `generateEnvExample(options?)`
 
-Returns `.env.example` content as a string.
+Creates and returns `.env.example` content as a string from the schema registered with `defineEnv()`.
 
 ```ts
 import { generateEnvExample } from "feature-env";
+import { envSchema } from "./env/schema";
 
 const output = generateEnvExample();
+console.log(output);
+```
+
+With options:
+
+```ts
+import { generateEnvExample } from "feature-env";
+import { envSchema } from "./env/schema";
+
+const output = generateEnvExample({
+  includeComments: true,
+  newlineBetweenGroups: true,
+});
 ```
 
 ### `writeEnvExample(path?, options?)`
 
-Writes generated output to file. Default path is `.env.example`.
+Generates `.env.example` content from the same schema and writes it to a file. Default path is `.env.example`.
 
 ```ts
 import { writeEnvExample } from "feature-env";
 
 writeEnvExample(); // .env.example
 writeEnvExample("./config/.env.example");
+```
+
+Programmatic implementation example:
+
+`scripts/generate-env-example.ts`
+
+```ts
+import "../src/env/schema"; // calls defineEnv(...)
+import { writeEnvExample } from "feature-env";
+
+writeEnvExample(".env.example");
 ```
 
 ## Example Output
@@ -132,25 +200,25 @@ requireEnv(["shared"], {
 ### Legacy mode
 
 ```bash
-feature-env API_KEY DATABASE_URL
+npx feature-env API_KEY DATABASE_URL
 ```
 
 ### Generate `.env.example`
 
 ```bash
-feature-env --generate-example
+npx feature-env --generate-example
 ```
 
 Custom output path:
 
 ```bash
-feature-env --generate-example --out ./config/.env.example
+npx feature-env --generate-example --out ./config/.env.example
 ```
 
 Explicit schema path:
 
 ```bash
-feature-env --generate-example --schema ./dist/env/schema.js
+npx feature-env --generate-example --schema ./dist/env/schema.js
 ```
 
 If your schema is TypeScript and compiled to `dist`, run:
@@ -170,7 +238,8 @@ Auto-detect checks (in order):
 Notes:
 
 - Installing `feature-env` alone does not generate `.env.example`.
-- Generation happens when `feature-env --generate-example` is executed.
+- Generation happens when `npx feature-env --generate-example` is executed.
+- If you install globally (`npm install -g feature-env`), you can run `feature-env ...` without `npx`.
 
 ## Auto-generate After Install (Consumer App)
 
@@ -180,7 +249,7 @@ In the app that uses `feature-env`, add:
 {
   "scripts": {
     "build": "tsc",
-    "env:example": "feature-env --generate-example",
+    "env:example": "npx feature-env --generate-example",
     "postinstall": "npm run build && npm run env:example"
   }
 }
