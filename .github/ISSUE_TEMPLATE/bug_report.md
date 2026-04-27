@@ -23,7 +23,7 @@ Provide exact steps, including schema and env input when relevant.
 Paste a minimal runnable example if possible:
 
 ```ts
-import { defineEnv, requireEnv, optionalEnv, str, int, bool, url, enumOf } from "safe-env-route";
+import { defineEnv, requireEnv, optionalEnv, str, int, bool, url, enumOf } from "feature-env";
 
 // minimal reproduction here
 ```

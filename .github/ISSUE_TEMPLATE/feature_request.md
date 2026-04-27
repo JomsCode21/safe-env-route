@@ -1,6 +1,6 @@
 # Feature Request
 
-Thank you for suggesting an improvement to `safe-env-route`.
+Thank you for suggesting an improvement to `feature-env`.
 
 ---
 
@@ -23,7 +23,7 @@ Describe how you expect the feature to work.
 If possible, show the expected usage:
 
 ```ts
-import { defineEnv, requireEnv } from "safe-env-route";
+import { defineEnv, requireEnv } from "feature-env";
 
 // expected API example
 ```

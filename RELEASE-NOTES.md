@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - Documentation now includes strict unknown-key usage and quick demo steps.
 - Tests now cover strict mode enabled/disabled and typo suggestion behavior.
+- Package rename: `safe-env-route` -> `feature-env`.
 
 ### Deprecated
 - 
@@ -47,9 +48,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - `bool`
   - `int`
   - `enumOf`
-- Legacy compatibility exports under `safe-env-route/legacy`.
+- Legacy compatibility exports under `feature-env/legacy`.
 - CLI aliases:
-  - `safe-env-route`
+  - `feature-env`
   - `env-checking`
 
 ### Changed

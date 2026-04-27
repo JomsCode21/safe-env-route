@@ -1,26 +1,35 @@
-# safe-env-route
+# feature-env
 
-`safe-env-route` helps you validate environment variables by feature or route.
+Feature-scoped environment validation for web apps.
 
-Instead of checking every env var for your whole app at once, you define groups (`shared`, `auth`, `payments`, etc.) and validate only what a route/module needs.
+feature-env is a TypeScript-first npm package for validating environment variables by feature, route, or module.
+
+Instead of validating one large global env object at startup, feature-env lets you define grouped env requirements and load only what a part of your app actually needs.
+
+Validate env by feature, route, or module.
+
+Built for modern web apps that have separate auth, payments, storage, analytics, and other feature-level configuration.
+
+> Previously named `safe-env-route`. The package was renamed to better reflect that it supports feature-, route-, and module-scoped env validation.
 
 ## Why use this?
 
+- Validate only the environment variables each feature actually needs.
 - Fail fast with clear errors when env is missing or invalid
 - Keep feature-specific env checks close to feature code
 - Get parsed values (`int`, `bool`, `enum`) instead of raw strings
-- Keep old flat env-check behavior via `safe-env-route/legacy`
+- Keep old flat env-check behavior via `feature-env/legacy`
 
 ## Installation
 
 ```bash
-npm install safe-env-route
+npm install feature-env
 ```
 
 ## Quick Start
 
 ```ts
-import { defineEnv, requireEnv, str, url, enumOf, int, bool } from "safe-env-route";
+import { defineEnv, requireEnv, str, url, enumOf, int, bool } from "feature-env";
 
 // Define your env contract once.
 defineEnv({
@@ -147,7 +156,7 @@ Environment validation failed:
 If you are migrating from the old flat checker:
 
 ```ts
-import { checkEnv, assertEnv, runCli } from "safe-env-route/legacy";
+import { checkEnv, assertEnv, runCli } from "feature-env/legacy";
 ```
 
 This keeps old behavior while you migrate gradually to grouped schemas.
@@ -157,12 +166,12 @@ This keeps old behavior while you migrate gradually to grouped schemas.
 Legacy-compatible CLI is included:
 
 ```bash
-safe-env-route API_KEY DATABASE_URL
+feature-env API_KEY DATABASE_URL
 ```
 
 ## Minimal Migration Path
 
-1. Keep existing code using `safe-env-route/legacy`
+1. Keep existing code using `feature-env/legacy`
 2. Add grouped schema with `defineEnv()`
 3. Replace flat checks route-by-route with `requireEnv([...])`
 4. Remove legacy usage when migration is done
@@ -180,7 +189,7 @@ This repo includes ready-to-copy app templates:
 
 ```ts
 // src/env/schema.ts
-import { bool, defineEnv, enumOf, int, str, url } from "safe-env-route";
+import { bool, defineEnv, enumOf, int, str, url } from "feature-env";
 
 // Define env vars once and group them by feature.
 defineEnv({
@@ -211,7 +220,7 @@ defineEnv({
 
 ```ts
 // src/env/server.ts
-import { requireEnv } from "safe-env-route";
+import { requireEnv } from "feature-env";
 import "./schema";
 
 // Validate critical env before app boot.
@@ -222,7 +231,7 @@ export const serverEnv = requireEnv(["shared", "db"]);
 
 ```ts
 // src/env/auth.ts
-import { requireEnv } from "safe-env-route";
+import { requireEnv } from "feature-env";
 import "./schema";
 
 // Auth routes require shared + auth groups.
@@ -231,7 +240,7 @@ export const authEnv = requireEnv(["shared", "auth"]);
 
 ```ts
 // src/env/payments.ts
-import { optionalEnv } from "safe-env-route";
+import { optionalEnv } from "feature-env";
 import "./schema";
 
 // Payments can be absent in some deployments.

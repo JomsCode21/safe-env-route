@@ -1,4 +1,4 @@
-import { bool, defineEnv, enumOf, int, str, url } from "safe-env-route";
+import { bool, defineEnv, enumOf, int, str, url } from "feature-env";
 
 // Define env vars once and group them by app feature.
 export const envSchema = defineEnv({
