@@ -1,6 +1,6 @@
 # Contributing Guide
 
-Thanks for contributing to `safe-env-route`.
+Thanks for contributing to `feature-env`.
 
 For package installation and usage examples, see `README.md`.
 
@@ -22,6 +22,17 @@ npm install
 - Build test output: `npm run build:test`
 - Run tests: `npm test`
 - Full verification (build + tests): `npm run check`
+
+## Build Lifecycle Hooks
+
+Build scripts use npm lifecycle hooks:
+
+- `prebuild` runs `clean`
+- `build` compiles TypeScript to `dist/`
+- `postbuild` verifies required build outputs exist
+- `prebuild:test` runs `clean:test`
+- `build:test` compiles test TypeScript to `.test-dist/`
+- `postbuild:test` verifies required test build outputs exist
 
 ## Project Structure
 

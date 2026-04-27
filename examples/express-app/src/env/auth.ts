@@ -1,4 +1,4 @@
-import { requireEnv } from "safe-env-route";
+import { requireEnv } from "feature-env";
 import "./schema";
 
 // Validate only what auth routes need.

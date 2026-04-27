@@ -1,4 +1,4 @@
-import { optionalEnv } from "safe-env-route";
+import { optionalEnv } from "feature-env";
 import "./schema";
 
 // Payments can be optional; provided values are still validated.
