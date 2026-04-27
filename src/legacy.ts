@@ -23,6 +23,7 @@ interface CliOptions {
   generateExample: boolean;
   schemaPath?: string;
   outputPath: string;
+  overwrite: boolean;
   requiredNames: string[];
 }
 
@@ -95,6 +96,7 @@ function parseCliOptions(argv: string[]): CliOptions {
   let generateExample = false;
   let schemaPath: string | undefined;
   let outputPath = ".env.example";
+  let overwrite = true;
   const requiredNames: string[] = [];
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -125,6 +127,15 @@ function parseCliOptions(argv: string[]): CliOptions {
       continue;
     }
 
+    if (arg === "--no-overwrite") {
+      overwrite = false;
+      continue;
+    }
+
+    if (arg.startsWith("--")) {
+      throw new Error(`Unknown option: ${arg}`);
+    }
+
     requiredNames.push(arg);
   }
 
@@ -132,6 +143,7 @@ function parseCliOptions(argv: string[]): CliOptions {
     generateExample,
     schemaPath,
     outputPath,
+    overwrite,
     requiredNames,
   };
 }
@@ -163,7 +175,7 @@ export function runCli(argv: string[]): number {
     if (options.generateExample) {
       const loadedSchemaPath = loadSchemaModule(options.schemaPath);
       try {
-        writeEnvExample(options.outputPath);
+        writeEnvExample(options.outputPath, { overwrite: options.overwrite });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         if (

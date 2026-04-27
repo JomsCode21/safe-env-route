@@ -61,6 +61,7 @@ function parseCliOptions(argv) {
     let generateExample = false;
     let schemaPath;
     let outputPath = ".env.example";
+    let overwrite = true;
     const requiredNames = [];
     for (let index = 0; index < argv.length; index += 1) {
         const arg = argv[index];
@@ -86,12 +87,20 @@ function parseCliOptions(argv) {
             index += 1;
             continue;
         }
+        if (arg === "--no-overwrite") {
+            overwrite = false;
+            continue;
+        }
+        if (arg.startsWith("--")) {
+            throw new Error(`Unknown option: ${arg}`);
+        }
         requiredNames.push(arg);
     }
     return {
         generateExample,
         schemaPath,
         outputPath,
+        overwrite,
         requiredNames,
     };
 }
@@ -117,7 +126,7 @@ function runCli(argv) {
         if (options.generateExample) {
             const loadedSchemaPath = loadSchemaModule(options.schemaPath);
             try {
-                (0, env_example_1.writeEnvExample)(options.outputPath);
+                (0, env_example_1.writeEnvExample)(options.outputPath, { overwrite: options.overwrite });
             }
             catch (error) {
                 const message = error instanceof Error ? error.message : String(error);

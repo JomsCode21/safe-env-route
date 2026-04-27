@@ -94,3 +94,47 @@ const legacy_1 = require("../src/legacy");
     }
     strict_1.default.equal((0, node_fs_1.readFileSync)(outputPath, "utf8"), "# [shared]\nAPP_URL=\n");
 });
+(0, node_test_1.default)("legacy runCli rejects unknown options", () => {
+    const originalError = console.error;
+    let captured = "";
+    try {
+        console.error = (message) => {
+            captured = String(message ?? "");
+        };
+        const exitCode = (0, legacy_1.runCli)(["--unknown-option"]);
+        strict_1.default.equal(exitCode, 1);
+    }
+    finally {
+        console.error = originalError;
+    }
+    strict_1.default.match(captured, /Unknown option: --unknown-option/);
+});
+(0, node_test_1.default)("legacy runCli supports --no-overwrite for generated example", () => {
+    const originalLog = console.log;
+    const originalError = console.error;
+    const tempDir = (0, node_fs_1.mkdtempSync)((0, node_path_1.join)((0, node_os_1.tmpdir)(), "feature-env-cli-overwrite-"));
+    const outputPath = (0, node_path_1.join)(tempDir, ".env.example");
+    (0, node_fs_1.writeFileSync)(outputPath, "EXISTING=1\n", "utf8");
+    let captured = "";
+    try {
+        console.log = () => { };
+        console.error = (message) => {
+            captured = String(message ?? "");
+        };
+        const exitCode = (0, legacy_1.runCli)([
+            "--generate-example",
+            "--schema",
+            "test/fixtures/cli-schema.cjs",
+            "--out",
+            outputPath,
+            "--no-overwrite",
+        ]);
+        strict_1.default.equal(exitCode, 1);
+    }
+    finally {
+        console.log = originalLog;
+        console.error = originalError;
+    }
+    strict_1.default.match(captured, /Refusing to overwrite existing file/i);
+    strict_1.default.equal((0, node_fs_1.readFileSync)(outputPath, "utf8"), "EXISTING=1\n");
+});

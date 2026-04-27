@@ -1,4 +1,9 @@
-export type EnvIssueReason = "missing" | "invalid" | "unknown_group" | "unknown_key";
+export type EnvIssueReason =
+  | "missing"
+  | "invalid"
+  | "unknown_group"
+  | "unknown_key"
+  | "duplicate_key";
 
 export interface EnvIssue {
   group: string;
@@ -22,6 +27,11 @@ function formatIssue(issue: EnvIssue): string {
   if (issue.reason === "unknown_key") {
     const suggestion = issue.suggestion ? ` Did you mean "${issue.suggestion}"?` : "";
     return `[${issue.group}] ${issue.key} is not defined in schema.${suggestion}`;
+  }
+
+  if (issue.reason === "duplicate_key") {
+    const detail = issue.detail ? ` (${issue.detail})` : "";
+    return `[${issue.group}] ${issue.key} is defined in multiple selected groups${detail}`;
   }
 
   const expected = issue.expected ? `expected ${issue.expected}` : "invalid value";

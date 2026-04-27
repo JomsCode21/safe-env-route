@@ -108,3 +108,22 @@ const src_1 = require("../src");
         return true;
     });
 });
+(0, node_test_1.default)("requireEnv throws when selected groups define duplicate keys", () => {
+    (0, src_1.defineEnv)({
+        shared: {
+            API_URL: (0, src_1.str)(),
+        },
+        auth: {
+            API_URL: (0, src_1.str)(),
+        },
+    });
+    strict_1.default.throws(() => (0, src_1.requireEnv)(["shared", "auth"], {
+        env: {
+            API_URL: "https://example.com",
+        },
+    }), (error) => {
+        strict_1.default.ok(error instanceof src_1.EnvValidationError);
+        strict_1.default.match(error.message, /API_URL is defined in multiple selected groups/);
+        return true;
+    });
+});

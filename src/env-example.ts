@@ -1,15 +1,17 @@
-import { writeFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 
 import { getDefinedSchema } from "./define-env";
 
 export interface GenerateEnvExampleOptions {
   includeComments?: boolean;
   newlineBetweenGroups?: boolean;
+  overwrite?: boolean;
 }
 
 const defaultOptions: Required<GenerateEnvExampleOptions> = {
   includeComments: true,
   newlineBetweenGroups: true,
+  overwrite: true,
 };
 
 function getOptions(options?: GenerateEnvExampleOptions): Required<GenerateEnvExampleOptions> {
@@ -54,7 +56,12 @@ export function writeEnvExample(
   filePath = ".env.example",
   options?: GenerateEnvExampleOptions,
 ): string {
-  const content = generateEnvExample(options);
+  const settings = getOptions(options);
+  if (!settings.overwrite && existsSync(filePath)) {
+    throw new Error(`Refusing to overwrite existing file: ${filePath}`);
+  }
+
+  const content = generateEnvExample(settings);
   writeFileSync(filePath, content, "utf8");
   return content;
 }
