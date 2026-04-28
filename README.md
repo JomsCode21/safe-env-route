@@ -49,6 +49,119 @@ import { envSchema } from "./schema";
 export const dbEnv = requireEnv(envSchema, ["db"] as const);
 ```
 
+## Real Project Pattern (Module-Scoped Env)
+
+This is a practical backend pattern (like your BPLO setup):
+
+1. Define one grouped schema in `src/env/schema.ts`
+2. Create one env module per feature (`db.ts`, `auth.ts`, `mail.ts`, `security.ts`, etc.)
+3. Each module calls `requireEnv(...)` or `optionalEnv(...)` only for groups it needs
+4. Derive app-specific values (like `isProduction`, parsed origin lists) inside those modules
+
+`src/env/schema.ts` (example shape)
+
+```ts
+import { bool, defineEnv, enumOf, int, str } from "feature-env";
+
+export const envSchema = defineEnv({
+  runtime: {
+    NODE_ENV: enumOf(["development", "test", "production"] as const),
+  },
+  shared: {
+    NODE_ENV: enumOf(["development", "test", "production"] as const),
+    PORT: int(),
+    CORS_ORIGINS: str(),
+  },
+  db: {
+    MONGO_DB_URI: str(),
+  },
+  auth: {
+    JWT_ACCESS_TOKEN: str(),
+    JWT_REFRESH_TOKEN: str(),
+    GOOGLE_CLIENT_ID: str(),
+  },
+  tokens: {
+    JWT_ACCESS_TOKEN: str(),
+    JWT_REFRESH_TOKEN: str(),
+  },
+  mail: {
+    MAIL_HOST: str(),
+    MAIL_PORT: int(),
+    MAIL: str(),
+    MAIL_PASSWORD: str(),
+  },
+  security: {
+    REFRESH_COOKIE_NAME: str(),
+    REFRESH_COOKIE_PATH: str(),
+    GLOBAL_RATE_LIMIT_MINUTES: int(),
+    GLOBAL_RATE_LIMIT_MAX: int(),
+    RECAPTCHA_SECRET_KEY: str(),
+  },
+  payments: {
+    PAYMENT_QR_SECRET: str(),
+  },
+  seed: {
+    SEED_SUPER_ADMIN: bool(),
+    SUPER_ADMIN_EMAIL: str(),
+    SUPER_ADMIN_PASSWORD: str(),
+  },
+});
+```
+
+`src/env/server.ts` (required + derived)
+
+```ts
+import { requireEnv } from "feature-env";
+import { envSchema } from "@/env/schema";
+
+const sharedEnv = requireEnv(envSchema, ["shared"] as const);
+
+const normalizeOrigin = (value: string) => value.trim().replace(/\/+$/, "");
+const envAllowedOrigins = sharedEnv.CORS_ORIGINS.split(",")
+  .map(normalizeOrigin)
+  .filter(Boolean);
+
+const isProduction = sharedEnv.NODE_ENV === "production";
+const devFallbackOrigins = isProduction ? [] : ["http://localhost:5173"];
+
+export const serverEnv = {
+  ...sharedEnv,
+  isProduction,
+  allowedOrigins: Array.from(new Set([...envAllowedOrigins, ...devFallbackOrigins])),
+};
+```
+
+`src/env/security.ts` (combine groups + derive)
+
+```ts
+import { requireEnv } from "feature-env";
+import { envSchema } from "@/env/schema";
+
+const env = requireEnv(envSchema, ["runtime", "security"] as const);
+
+export const securityEnv = {
+  ...env,
+  isProduction: env.NODE_ENV === "production",
+};
+```
+
+`src/env/payments.ts` (optional values + normalization)
+
+```ts
+import { optionalEnv } from "feature-env";
+import { envSchema } from "./schema";
+
+const optionalEnvValues = optionalEnv(envSchema, ["payments", "tokens"] as const);
+const normalize = (value: unknown) => String(value ?? "").trim();
+
+export const paymentEnv = {
+  paymentQrSecret: normalize(optionalEnvValues.PAYMENT_QR_SECRET),
+  jwtAccessToken: normalize(optionalEnvValues.JWT_ACCESS_TOKEN),
+};
+```
+
+Important: avoid selecting groups together when they define the same key name (for example `runtime.NODE_ENV` and `shared.NODE_ENV`), because duplicate keys across selected groups now throw a validation error.
+
 ### File Call Flow
 
 `src/app.ts` (or `src/index.ts`)
