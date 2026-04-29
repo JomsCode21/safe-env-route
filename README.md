@@ -127,7 +127,9 @@ const devFallbackOrigins = isProduction ? [] : ["http://localhost:5173"];
 export const serverEnv = {
   ...sharedEnv,
   isProduction,
-  allowedOrigins: Array.from(new Set([...envAllowedOrigins, ...devFallbackOrigins])),
+  allowedOrigins: Array.from(
+    new Set([...envAllowedOrigins, ...devFallbackOrigins]),
+  ),
 };
 ```
 
@@ -151,7 +153,10 @@ export const securityEnv = {
 import { optionalEnv } from "feature-env";
 import { envSchema } from "./schema";
 
-const optionalEnvValues = optionalEnv(envSchema, ["payments", "tokens"] as const);
+const optionalEnvValues = optionalEnv(envSchema, [
+  "payments",
+  "tokens",
+] as const);
 const normalize = (value: unknown) => String(value ?? "").trim();
 
 export const paymentEnv = {
@@ -276,7 +281,9 @@ STRIPE_SECRET_KEY=
 - `url()`: valid URL string
 - `bool()`: boolean (`true/false`, `1/0`, `yes/no`, `on/off`)
 - `int()`: whole number
+- `port()`: valid TCP port (1-65535)
 - `enumOf([...])`: one allowed string value
+- `json()`: parses JSON string to object/array
 
 ## Options
 

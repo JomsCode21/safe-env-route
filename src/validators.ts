@@ -44,7 +44,9 @@ export function int(): EnvValidator<number> {
   });
 }
 
-export function enumOf<const T extends readonly string[]>(values: T): EnvValidator<T[number]> {
+export function enumOf<const T extends readonly string[]>(
+  values: T,
+): EnvValidator<T[number]> {
   if (values.length === 0) {
     throw new Error("enumOf(values) requires at least one value");
   }
@@ -55,5 +57,28 @@ export function enumOf<const T extends readonly string[]>(values: T): EnvValidat
       throw new Error(`Expected one of: ${values.join(", ")}`);
     }
     return raw as T[number];
+  });
+}
+
+export function port(): EnvValidator<number> {
+  return createValidator("port", "a valid TCP port (1-65535)", (raw) => {
+    if (!/^\d+$/.test(raw.trim())) {
+      throw new Error("Expected a positive number");
+    }
+    const value = Number.parseInt(raw, 10);
+    if (value < 1 || value > 65535) {
+      throw new Error("Port must be between 1 and 65535");
+    }
+    return value;
+  });
+}
+
+export function json(): EnvValidator<unknown> {
+  return createValidator("json", "valid JSON", (raw) => {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      throw new Error("Invalid JSON string");
+    }
   });
 }
